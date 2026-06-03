@@ -1,65 +1,32 @@
 <!DOCTYPE html>
 <html lang="de">
-
 <head>
-  <meta charset="utf-8">
-  <title>VR World Switch</title>
+  <meta charset="UTF-8" />
+  <title>Infinity VR Loop</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+  <link rel="stylesheet" href="style.css" />
   <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
-
-  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-
-  <div id="loader">Panoramen werden geladen…</div>
-
   <div id="hud">
-    🌿 Wiese &amp; Berge · Dreh dich 180° für den Strand
+    <div id="status">Lade Panorama...</div>
+    <div id="hint">Drehe dich um 180°, um die Welt zu wechseln</div>
   </div>
 
-  <a-scene vr-mode-ui="enabled: true"
-           renderer="colorManagement: true">
+  <a-scene>
+    <a-sky id="sky" color="#000"></a-sky>
 
-    <!-- Assets -->
-    <a-assets timeout="30000">
-
-      <img id="pano-meadow"
-           src="https://dl.polyhaven.org/file/ph-assets/HDRIs/jpg/1k/meadow_2_1k.jpg"
-           crossorigin="anonymous">
-
-      <img id="pano-beach"
-           src="https://dl.polyhaven.org/file/ph-assets/HDRIs/jpg/1k/kloppenheim_1k.jpg"
-           crossorigin="anonymous">
-
-    </a-assets>
-
-    <!-- Kamera -->
-    <a-entity id="rig" position="0 0 0">
-
-      <a-camera id="camera"
-                look-controls="pointerLockEnabled: true"
-                wasd-controls-enabled="false">
-      </a-camera>
-
-    </a-entity>
-
-    <!-- Welt 1 -->
-    <a-sky id="sky1"
-           src="#pano-meadow"
-           rotation="0 -90 0">
-    </a-sky>
-
-    <!-- Welt 2 -->
-    <a-sky id="sky2"
-           src="#pano-beach"
-           rotation="0 -90 0"
-           visible="false">
-    </a-sky>
-
+    <a-camera
+      id="camera"
+      position="0 1.6 0"
+      look-controls
+      wasd-controls
+      turn-detector>
+    </a-camera>
   </a-scene>
-  
-  <script src="script.js" defer></script>
 
+  <script src="script.js"></script>
 </body>
 </html>
