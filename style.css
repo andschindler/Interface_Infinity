@@ -1,0 +1,51 @@
+body {
+    margin: 0;
+    overflow: hidden;
+    background: black;
+  }
+  
+  /* HUD */
+  #hud {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+  
+    transform: translateX(-50%);
+  
+    color: white;
+    font-family: monospace;
+    font-size: 13px;
+  
+    background: rgba(0, 0, 0, 0.55);
+  
+    padding: 8px 18px;
+    border-radius: 20px;
+  
+    pointer-events: none;
+    z-index: 999;
+  
+    white-space: nowrap;
+    letter-spacing: 0.03em;
+  
+    transition: opacity 0.3s ease;
+  }
+  
+  /* Loader */
+  #loader {
+    position: fixed;
+    inset: 0;
+  
+    background: #000;
+  
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  
+    color: white;
+    font-family: monospace;
+    font-size: 16px;
+  
+    z-index: 9999;
+  
+    transition: opacity 0.6s ease;
+  }
