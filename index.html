@@ -13,9 +13,19 @@
   <audio id="bgMusic" src="Audio/music.MP3" loop></audio>
 <div id="fadeOverlay"></div>
   <div id="hud">
-    <div id="status">Lade Welt...</div>
-    <div id="hint">Drehe dich um 180°, um die Welt zu wechseln</div>
+  <div id="status">Lade Welt...</div>
+  <div id="hint">Drehe dich um 180°, um die Welt zu wechseln</div>
+
+  <div id="controls">
+    <button id="prevBtn">← Zurück</button>
+    <button id="nextBtn">Weiter →</button>
   </div>
+
+  <div id="audioControls">
+    <button id="muteBtn">🔊</button>
+    <input id="volumeSlider" type="range" min="0" max="1" step="0.01" value="0.45">
+  </div>
+</div>
 
   <a-scene background="color: #000">
 

@@ -93,3 +93,36 @@ body {
 #fadeOverlay.active {
   opacity: 1;
 }
+
+#controls {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+  pointer-events: auto;
+}
+
+#controls button,
+#audioControls button {
+  border: none;
+  padding: 8px 12px;
+  border-radius: 18px;
+  background: white;
+  color: black;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+#audioControls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin-top: 10px;
+  pointer-events: auto;
+}
+
+#volumeSlider {
+  width: 130px;
+  cursor: pointer;
+}
