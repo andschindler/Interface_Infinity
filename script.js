@@ -3,16 +3,21 @@ const camera = document.querySelector("#camera");
 const statusText = document.querySelector("#status");
 const fadeOverlay = document.querySelector("#fadeOverlay");
 
-const fallbackPanorama =
-  "https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg";
+// Lokale Panoramen aus deinem Images-Ordner
+let panoramaPool = [
+  { label: "Welt 1", url: "Images/1.jpeg" },
+  { label: "Welt 2", url: "Images/2.jpeg" },
+  { label: "Welt 3", url: "Images/3.jpeg" },
+  { label: "Welt 4", url: "Images/4.jpeg" },
+  { label: "Welt 5", url: "Images/5.jpeg" },
+  { label: "Welt 6", url: "Images/6.jpeg" },
+  { label: "Welt 7", url: "Images/7.jpeg" },
+  { label: "Welt 8", url: "Images/8.jpeg" }
+];
 
-const categoryName = "Category:360° panoramas with equirectangular projection";
-
-let panoramaPool = [];
 let currentIndex = 0;
 let lastSide = null;
 let isChanging = false;
-let nextCategoryContinue = null;
 
 function setStatus(text) {
   statusText.textContent = text;
@@ -45,7 +50,6 @@ function brightenSky() {
 function loadSkyImage(url, label) {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = "anonymous";
 
     img.onload = () => {
       sky.setAttribute("src", url);
@@ -59,6 +63,7 @@ function loadSkyImage(url, label) {
     };
 
     img.onerror = () => {
+      console.error("Bild konnte nicht geladen werden:", url);
       reject("Bild konnte nicht geladen werden");
     };
 
@@ -66,59 +71,11 @@ function loadSkyImage(url, label) {
   });
 }
 
-async function loadImagesFromCategory(categoryTitle, limit = 20, gcmcontinue = null) {
-  let apiUrl =
-    "https://commons.wikimedia.org/w/api.php" +
-    "?origin=*" +
-    "&action=query" +
-    "&format=json" +
-    "&generator=categorymembers" +
-    "&gcmtitle=" + encodeURIComponent(categoryTitle) +
-    "&gcmtype=file" +
-    "&gcmlimit=" + limit +
-    "&prop=imageinfo" +
-    "&iiprop=url|mime";
-
-  if (gcmcontinue) {
-    apiUrl += "&gcmcontinue=" + encodeURIComponent(gcmcontinue);
-  }
-
-  const response = await fetch(apiUrl);
-  const data = await response.json();
-
-  nextCategoryContinue = data.continue?.gcmcontinue || null;
-
-  const pages = data.query?.pages;
-
-  if (!pages) {
-    return [];
-  }
-
-  const images = Object.values(pages);
-
-  const validImages = images
-    .map((img) => {
-      const info = img.imageinfo?.[0];
-
-      if (!info) return null;
-      if (!info.url) return null;
-      if (!info.mime) return null;
-
-      const isImage =
-        info.mime === "image/jpeg" ||
-        info.mime === "image/png" ||
-        info.mime === "image/webp";
-
-      if (!isImage) return null;
-
-      return {
-        label: img.title.replace("File:", ""),
-        url: info.url
-      };
-    })
-    .filter(Boolean);
-
-  return validImages;
+function preloadLocalImages() {
+  panoramaPool.forEach((pano) => {
+    const img = new Image();
+    img.src = pano.url;
+  });
 }
 
 function shuffleArray(array) {
@@ -126,20 +83,13 @@ function shuffleArray(array) {
 }
 
 async function preloadPanoramas() {
-  setStatus("Lade Welten aus Kategorie...");
+  setStatus("Lade lokale Panoramen...");
 
   try {
-    panoramaPool = await loadImagesFromCategory(categoryName, 20);
-
-    if (panoramaPool.length === 0) {
-      panoramaPool.push({
-        label: "Fallback Panorama",
-        url: fallbackPanorama
-      });
-    }
-
     shuffleArray(panoramaPool);
     currentIndex = 0;
+
+    preloadLocalImages();
 
     await loadSkyImage(
       panoramaPool[currentIndex].url,
@@ -149,44 +99,7 @@ async function preloadPanoramas() {
     setStatus("Bereit: Drehe dich um 180°");
   } catch (error) {
     console.error(error);
-
-    panoramaPool = [
-      {
-        label: "Fallback Panorama",
-        url: fallbackPanorama
-      }
-    ];
-
-    currentIndex = 0;
-
-    await loadSkyImage(
-      panoramaPool[0].url,
-      panoramaPool[0].label
-    );
-
-    setStatus("Fehler beim Laden der Kategorie");
-  }
-}
-
-async function loadMorePanoramasIfNeeded() {
-  if (currentIndex < panoramaPool.length - 3) return;
-  if (!nextCategoryContinue) return;
-
-  try {
-    const newImages = await loadImagesFromCategory(
-      categoryName,
-      20,
-      nextCategoryContinue
-    );
-
-    if (newImages.length > 0) {
-      const existingUrls = new Set(panoramaPool.map(p => p.url));
-      const uniqueNewImages = newImages.filter(img => !existingUrls.has(img.url));
-
-      panoramaPool.push(...uniqueNewImages);
-    }
-  } catch (error) {
-    console.error("Fehler beim Nachladen weiterer Panoramen:", error);
+    setStatus("Fehler beim Laden der lokalen Bilder");
   }
 }
 
@@ -213,8 +126,6 @@ async function nextWorld() {
 
   await fadeFromBlack();
 
-  loadMorePanoramasIfNeeded();
-
   setTimeout(() => {
     isChanging = false;
   }, 500);
@@ -235,4 +146,5 @@ function checkRotationLoop() {
 }
 
 preloadPanoramas();
+
 setInterval(checkRotationLoop, 200);
