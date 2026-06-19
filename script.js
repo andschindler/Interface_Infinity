@@ -1,11 +1,11 @@
 const sky = document.querySelector("#sky");
 const camera = document.querySelector("#camera");
 const statusText = document.querySelector("#status");
+const fadeOverlay = document.querySelector("#fadeOverlay");
 
 const fallbackPanorama =
   "https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg";
 
-// Exakte Wikimedia-Commons-Kategorie
 const categoryName = "Category:360° panoramas with equirectangular projection";
 
 let panoramaPool = [];
@@ -16,6 +16,20 @@ let nextCategoryContinue = null;
 
 function setStatus(text) {
   statusText.textContent = text;
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function fadeToBlack() {
+  fadeOverlay.classList.add("active");
+  await sleep(700);
+}
+
+async function fadeFromBlack() {
+  fadeOverlay.classList.remove("active");
+  await sleep(700);
 }
 
 function brightenSky() {
@@ -72,10 +86,10 @@ async function loadImagesFromCategory(categoryTitle, limit = 20, gcmcontinue = n
   const response = await fetch(apiUrl);
   const data = await response.json();
 
-  // Für die nächste "Seite" der Kategorie
   nextCategoryContinue = data.continue?.gcmcontinue || null;
 
   const pages = data.query?.pages;
+
   if (!pages) {
     return [];
   }
@@ -85,6 +99,7 @@ async function loadImagesFromCategory(categoryTitle, limit = 20, gcmcontinue = n
   const validImages = images
     .map((img) => {
       const info = img.imageinfo?.[0];
+
       if (!info) return null;
       if (!info.url) return null;
       if (!info.mime) return null;
@@ -126,7 +141,10 @@ async function preloadPanoramas() {
     shuffleArray(panoramaPool);
     currentIndex = 0;
 
-    await loadSkyImage(panoramaPool[currentIndex].url, panoramaPool[currentIndex].label);
+    await loadSkyImage(
+      panoramaPool[currentIndex].url,
+      panoramaPool[currentIndex].label
+    );
 
     setStatus("Bereit: Drehe dich um 180°");
   } catch (error) {
@@ -140,22 +158,29 @@ async function preloadPanoramas() {
     ];
 
     currentIndex = 0;
-    await loadSkyImage(panoramaPool[0].url, panoramaPool[0].label);
+
+    await loadSkyImage(
+      panoramaPool[0].url,
+      panoramaPool[0].label
+    );
+
     setStatus("Fehler beim Laden der Kategorie");
   }
 }
 
 async function loadMorePanoramasIfNeeded() {
-  // Wenn wir fast am Ende des Pools sind, neue Bilder aus der nächsten Kategorie-Seite laden
   if (currentIndex < panoramaPool.length - 3) return;
   if (!nextCategoryContinue) return;
 
   try {
-    const newImages = await loadImagesFromCategory(categoryName, 20, nextCategoryContinue);
+    const newImages = await loadImagesFromCategory(
+      categoryName,
+      20,
+      nextCategoryContinue
+    );
 
     if (newImages.length > 0) {
       const existingUrls = new Set(panoramaPool.map(p => p.url));
-
       const uniqueNewImages = newImages.filter(img => !existingUrls.has(img.url));
 
       panoramaPool.push(...uniqueNewImages);
@@ -171,9 +196,10 @@ async function nextWorld() {
 
   isChanging = true;
 
+  await fadeToBlack();
+
   currentIndex++;
 
-  // Falls Ende erreicht → mischen und wieder von vorne
   if (currentIndex >= panoramaPool.length) {
     shuffleArray(panoramaPool);
     currentIndex = 0;
@@ -182,11 +208,16 @@ async function nextWorld() {
   const nextPanorama = panoramaPool[currentIndex];
 
   await loadSkyImage(nextPanorama.url, nextPanorama.label);
-  await loadMorePanoramasIfNeeded();
+
+  await sleep(150);
+
+  await fadeFromBlack();
+
+  loadMorePanoramasIfNeeded();
 
   setTimeout(() => {
     isChanging = false;
-  }, 800);
+  }, 500);
 }
 
 function checkRotationLoop() {
