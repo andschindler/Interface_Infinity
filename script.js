@@ -2,6 +2,7 @@ const sky = document.querySelector("#sky");
 const camera = document.querySelector("#camera");
 const statusText = document.querySelector("#status");
 const fadeOverlay = document.querySelector("#fadeOverlay");
+const bgMusic = document.querySelector("#bgMusic");
 
 // Lokale Panoramen aus deinem Images-Ordner
 let panoramaPool = [
@@ -19,6 +20,29 @@ let currentIndex = 0;
 let lastSide = null;
 let isChanging = false;
 
+function startBackgroundMusic() {
+  bgMusic.volume = 0.45;
+
+  const playPromise = bgMusic.play();
+
+  if (playPromise !== undefined) {
+    playPromise
+      .then(() => {
+        console.log("Musik gestartet");
+      })
+      .catch(() => {
+        console.log("Autoplay blockiert. Musik startet nach erstem Klick.");
+
+        document.body.addEventListener("click", () => {
+          bgMusic.play();
+        }, { once: true });
+
+        document.body.addEventListener("touchstart", () => {
+          bgMusic.play();
+        }, { once: true });
+      });
+  }
+}
 function setStatus(text) {
   statusText.textContent = text;
 }
@@ -146,5 +170,5 @@ function checkRotationLoop() {
 }
 
 preloadPanoramas();
-
+startBackgroundMusic();
 setInterval(checkRotationLoop, 200);
