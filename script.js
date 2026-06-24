@@ -1,13 +1,20 @@
+const scene = document.querySelector("a-scene");
 const sky = document.querySelector("#sky");
 const camera = document.querySelector("#camera");
-const statusText = document.querySelector("#status");
+
+const statusText = document.querySelector("#status3d");
 const fadeOverlay = document.querySelector("#fadeOverlay");
+const vrFadeOverlay = document.querySelector("#vrFadeOverlay");
+
 const bgMusic = document.querySelector("#bgMusic");
 
-const prevBtn = document.querySelector("#prevBtn");
-const nextBtn = document.querySelector("#nextBtn");
-const muteBtn = document.querySelector("#muteBtn");
-const volumeSlider = document.querySelector("#volumeSlider");
+const prevBtn = document.querySelector("#prevBtn3d");
+const nextBtn = document.querySelector("#nextBtn3d");
+const muteBtn = document.querySelector("#muteBtn3d");
+const muteLabel = document.querySelector("#muteLabel3d");
+
+const volumeLabel = document.querySelector("#volumeLabel3d");
+const volumeStepsContainer = document.querySelector("#volumeSteps3d");
 
 // Lokale Panoramen aus deinem Images-Ordner
 let panoramaPool = [
@@ -29,6 +36,43 @@ let startAngle = null;
 
 // Audio
 let lastVolume = 0.45;
+const VOLUME_STEPS = 10;
+
+// verhindert doppelte Klicks durch Mouse + Gaze Cursor
+let lastHudActionTime = 0;
+
+function runHudAction(callback) {
+  const now = performance.now();
+
+  if (now - lastHudActionTime < 150) {
+    return;
+  }
+
+  lastHudActionTime = now;
+  tryStartMusicAfterInteraction();
+  callback();
+}
+
+function setText(entity, text) {
+  if (!entity) return;
+  entity.setAttribute("value", text);
+}
+
+function setStatus(text) {
+  setText(statusText, text);
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function tryStartMusicAfterInteraction() {
+  if (!bgMusic) return;
+
+  bgMusic.play().catch(() => {
+    // Browser blockiert Autoplay bis zur Nutzerinteraktion
+  });
+}
 
 function startBackgroundMusic() {
   bgMusic.volume = lastVolume;
@@ -42,82 +86,143 @@ function startBackgroundMusic() {
         console.log("Musik gestartet");
       })
       .catch(() => {
-        console.log("Autoplay blockiert. Musik startet nach erstem Klick.");
+        console.log("Autoplay blockiert. Musik startet nach erster Interaktion.");
 
-        document.body.addEventListener(
-          "click",
-          () => {
-            bgMusic.play();
-          },
-          { once: true }
-        );
+        document.body.addEventListener("click", tryStartMusicAfterInteraction, {
+          once: true
+        });
 
-        document.body.addEventListener(
-          "touchstart",
-          () => {
-            bgMusic.play();
-          },
-          { once: true }
-        );
+        document.body.addEventListener("touchstart", tryStartMusicAfterInteraction, {
+          once: true
+        });
+
+        scene.addEventListener("click", tryStartMusicAfterInteraction, {
+          once: true
+        });
       });
   }
 }
 
+function createVolumeSteps() {
+  volumeStepsContainer.innerHTML = "";
+
+  for (let i = 0; i < VOLUME_STEPS; i++) {
+    const step = document.createElement("a-plane");
+
+    step.setAttribute("class", "clickable volume-step");
+    step.setAttribute("width", "0.055");
+    step.setAttribute("height", "0.08");
+    step.setAttribute("position", `${i * 0.065} 0 0`);
+    step.setAttribute("material", "shader: flat; color: #444444");
+
+    const volumeValue = (i + 1) / VOLUME_STEPS;
+    step.dataset.volume = volumeValue;
+
+    step.addEventListener("click", () => {
+      runHudAction(() => {
+        setVolume(volumeValue);
+      });
+    });
+
+    step.addEventListener("mouseenter", () => {
+      step.setAttribute("scale", "1 1.25 1");
+    });
+
+    step.addEventListener("mouseleave", () => {
+      step.setAttribute("scale", "1 1 1");
+    });
+
+    volumeStepsContainer.appendChild(step);
+  }
+}
+
 function setupAudioControls() {
-  volumeSlider.value = lastVolume;
   bgMusic.volume = lastVolume;
+  bgMusic.muted = false;
 
-  volumeSlider.addEventListener("input", () => {
-    const volume = parseFloat(volumeSlider.value);
-
-    bgMusic.volume = volume;
-
-    if (volume === 0) {
-      bgMusic.muted = true;
-      muteBtn.textContent = "🔇";
-    } else {
-      bgMusic.muted = false;
-      lastVolume = volume;
-      muteBtn.textContent = "🔊";
-    }
-  });
+  createVolumeSteps();
+  updateAudioUI();
 
   muteBtn.addEventListener("click", () => {
-    if (bgMusic.muted || bgMusic.volume === 0) {
-      bgMusic.muted = false;
-
-      if (lastVolume <= 0) {
-        lastVolume = 0.45;
-      }
-
-      bgMusic.volume = lastVolume;
-      volumeSlider.value = lastVolume;
-      muteBtn.textContent = "🔊";
-    } else {
-      lastVolume = bgMusic.volume;
-      bgMusic.muted = true;
-      volumeSlider.value = 0;
-      muteBtn.textContent = "🔇";
-    }
+    runHudAction(toggleMute);
   });
 }
 
-function setStatus(text) {
-  statusText.textContent = text;
+function setVolume(volume) {
+  volume = Math.max(0, Math.min(1, volume));
+
+  bgMusic.volume = volume;
+
+  if (volume === 0) {
+    bgMusic.muted = true;
+  } else {
+    bgMusic.muted = false;
+    lastVolume = volume;
+  }
+
+  updateAudioUI();
 }
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+function toggleMute() {
+  if (bgMusic.muted || bgMusic.volume === 0) {
+    bgMusic.muted = false;
+
+    if (lastVolume <= 0) {
+      lastVolume = 0.45;
+    }
+
+    bgMusic.volume = lastVolume;
+  } else {
+    lastVolume = bgMusic.volume;
+    bgMusic.muted = true;
+  }
+
+  updateAudioUI();
+}
+
+function updateAudioUI() {
+  const effectiveVolume = bgMusic.muted ? 0 : bgMusic.volume;
+  const percentage = Math.round(effectiveVolume * 100);
+  const activeSteps = Math.round(effectiveVolume * VOLUME_STEPS);
+
+  setText(volumeLabel, "VOL " + percentage + "%");
+  setText(muteLabel, bgMusic.muted || effectiveVolume === 0 ? "OFF" : "ON");
+
+  const steps = document.querySelectorAll(".volume-step");
+
+  steps.forEach((step, index) => {
+    if (index < activeSteps) {
+      step.setAttribute("color", "#FFFFFF");
+      step.setAttribute("material", "shader: flat; color: #FFFFFF");
+    } else {
+      step.setAttribute("color", "#444444");
+      step.setAttribute("material", "shader: flat; color: #444444");
+    }
+  });
 }
 
 async function fadeToBlack() {
   fadeOverlay.classList.add("active");
+
+  vrFadeOverlay.setAttribute("visible", true);
+  vrFadeOverlay.setAttribute(
+    "animation__fade",
+    "property: material.opacity; to: 1; dur: 700; easing: easeInOutQuad"
+  );
+
   await sleep(700);
 }
 
 async function fadeFromBlack() {
   fadeOverlay.classList.remove("active");
+
+  vrFadeOverlay.setAttribute(
+    "animation__fade",
+    "property: material.opacity; to: 0; dur: 700; easing: easeInOutQuad"
+  );
+
   await sleep(700);
+  vrFadeOverlay.setAttribute("visible", false);
 }
 
 function brightenSky() {
@@ -172,7 +277,7 @@ async function preloadPanoramas() {
       panoramaPool[currentIndex].label
     );
 
-    setStatus("Bereit: Drehe dich um 180°");
+    setStatus("Bereit: Drehe dich um 180 Grad");
   } catch (error) {
     console.error(error);
     setStatus("Fehler beim Laden der lokalen Bilder");
@@ -222,8 +327,13 @@ function previousWorld() {
 }
 
 function getCurrentYaw() {
-  const rotationY = camera.object3D.rotation.y;
-  const degrees = THREE.MathUtils.radToDeg(rotationY);
+  const direction = new THREE.Vector3();
+
+  camera.object3D.getWorldDirection(direction);
+
+  const radians = Math.atan2(direction.x, direction.z);
+  const degrees = THREE.MathUtils.radToDeg(radians);
+
   return ((degrees % 360) + 360) % 360;
 }
 
@@ -249,11 +359,56 @@ function checkRotationLoop() {
   }
 }
 
-prevBtn.addEventListener("click", previousWorld);
-nextBtn.addEventListener("click", nextWorld);
+function setupHudButtonVisuals() {
+  const buttons = document.querySelectorAll(".hud-button");
 
-preloadPanoramas();
-setupAudioControls();
-startBackgroundMusic();
+  buttons.forEach((button) => {
+    const defaultColor = button.getAttribute("color") || "#FFFFFF";
+    button.dataset.defaultColor = defaultColor;
 
-setInterval(checkRotationLoop, 200);
+    button.addEventListener("mouseenter", () => {
+      button.setAttribute("color", "#D9D9D9");
+      button.setAttribute("scale", "1.06 1.06 1.06");
+    });
+
+    button.addEventListener("mouseleave", () => {
+      button.setAttribute("color", button.dataset.defaultColor);
+      button.setAttribute("scale", "1 1 1");
+    });
+
+    button.addEventListener("mousedown", () => {
+      button.setAttribute("scale", "0.94 0.94 0.94");
+    });
+
+    button.addEventListener("mouseup", () => {
+      button.setAttribute("scale", "1.06 1.06 1.06");
+    });
+  });
+}
+
+function setupWorldControls() {
+  prevBtn.addEventListener("click", () => {
+    runHudAction(previousWorld);
+  });
+
+  nextBtn.addEventListener("click", () => {
+    runHudAction(nextWorld);
+  });
+}
+
+function init() {
+  setupHudButtonVisuals();
+  setupWorldControls();
+  setupAudioControls();
+
+  preloadPanoramas();
+  startBackgroundMusic();
+
+  setInterval(checkRotationLoop, 200);
+}
+
+if (scene.hasLoaded) {
+  init();
+} else {
+  scene.addEventListener("loaded", init);
+}

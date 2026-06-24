@@ -11,23 +11,14 @@
 
 <body>
   <audio id="bgMusic" src="Audio/music.MP3" loop></audio>
-<div id="fadeOverlay"></div>
-  <div id="hud">
-  <div id="status">Lade Welt...</div>
-  <div id="hint">Drehe dich um 180°, um die Welt zu wechseln</div>
 
-  <div id="controls">
-    <button id="prevBtn">← Zurück</button>
-    <button id="nextBtn">Weiter →</button>
-  </div>
+  <!-- bleibt nur für Browser-Ansicht außerhalb VR -->
+  <div id="fadeOverlay"></div>
 
-  <div id="audioControls">
-    <button id="muteBtn">🔊</button>
-    <input id="volumeSlider" type="range" min="0" max="1" step="0.01" value="0.45">
-  </div>
-</div>
-
-  <a-scene background="color: #000">
+  <a-scene
+    background="color: #000"
+    cursor="rayOrigin: mouse"
+    raycaster="objects: .clickable">
 
     <a-sky
       id="sky"
@@ -36,12 +27,147 @@
       rotation="0 -90 0">
     </a-sky>
 
-    <a-camera
-      id="camera"
-      position="0 1.6 0"
-      look-controls
-      wasd-controls>
-    </a-camera>
+    <a-entity id="cameraRig" position="0 0 0">
+
+      <a-camera
+        id="camera"
+        position="0 1.6 0"
+        look-controls
+        wasd-controls>
+
+        <!-- Blick-Cursor für VR / Desktop-Mitte -->
+        <a-cursor
+          id="gazeCursor"
+          position="0 0 -1"
+          fuse="false"
+          raycaster="objects: .clickable"
+          geometry="primitive: ring; radiusInner: 0.008; radiusOuter: 0.014"
+          material="color: white; shader: flat; opacity: 0.9">
+        </a-cursor>
+
+        <!-- Schwarzer Fade direkt in VR -->
+        <a-plane
+          id="vrFadeOverlay"
+          position="0 0 -0.5"
+          width="2.4"
+          height="1.6"
+          visible="false"
+          material="shader: flat; color: #000000; transparent: true; opacity: 0">
+        </a-plane>
+
+        <!-- 3D HUD -->
+        <a-entity id="vrHud" position="0 -0.42 -1.15">
+
+          <a-plane
+            width="1.48"
+            height="0.62"
+            material="shader: flat; color: #050505; transparent: true; opacity: 0.82">
+          </a-plane>
+
+          <a-text
+            id="status3d"
+            value="Lade Welt..."
+            position="0 0.22 0.02"
+            align="center"
+            width="1.5"
+            color="#FFFFFF">
+          </a-text>
+
+          <a-text
+            id="hint3d"
+            value="Drehe dich um 180 Grad, um die Welt zu wechseln"
+            position="0 0.12 0.02"
+            align="center"
+            width="1.15"
+            color="#CFCFCF">
+          </a-text>
+
+          <!-- Zurück Button -->
+          <a-plane
+            id="prevBtn3d"
+            class="clickable hud-button"
+            position="-0.36 -0.03 0.03"
+            width="0.34"
+            height="0.11"
+            color="#FFFFFF"
+            material="shader: flat">
+          </a-plane>
+
+          <a-text
+            value="Zurueck"
+            position="-0.36 -0.045 0.045"
+            align="center"
+            width="0.8"
+            color="#000000">
+          </a-text>
+
+          <!-- Weiter Button -->
+          <a-plane
+            id="nextBtn3d"
+            class="clickable hud-button"
+            position="0.36 -0.03 0.03"
+            width="0.34"
+            height="0.11"
+            color="#FFFFFF"
+            material="shader: flat">
+          </a-plane>
+
+          <a-text
+            value="Weiter"
+            position="0.36 -0.045 0.045"
+            align="center"
+            width="0.8"
+            color="#000000">
+          </a-text>
+
+          <!-- Mute Button -->
+          <a-plane
+            id="muteBtn3d"
+            class="clickable hud-button"
+            position="-0.52 -0.22 0.03"
+            width="0.22"
+            height="0.11"
+            color="#FFFFFF"
+            material="shader: flat">
+          </a-plane>
+
+          <a-text
+            id="muteLabel3d"
+            value="ON"
+            position="-0.52 -0.235 0.045"
+            align="center"
+            width="0.65"
+            color="#000000">
+          </a-text>
+
+          <a-text
+            id="volumeLabel3d"
+            value="VOL 45%"
+            position="0.12 -0.15 0.04"
+            align="center"
+            width="0.9"
+            color="#FFFFFF">
+          </a-text>
+
+          <!-- Volume Balken wird per JS erzeugt -->
+          <a-entity id="volumeSteps3d" position="-0.18 -0.25 0.04"></a-entity>
+
+        </a-entity>
+      </a-camera>
+    </a-entity>
+
+    <!-- VR Controller Laser -->
+    <a-entity
+      laser-controls="hand: left"
+      raycaster="objects: .clickable; far: 10"
+      line="color: #ffffff; opacity: 0.7">
+    </a-entity>
+
+    <a-entity
+      laser-controls="hand: right"
+      raycaster="objects: .clickable; far: 10"
+      line="color: #ffffff; opacity: 0.7">
+    </a-entity>
 
   </a-scene>
 
