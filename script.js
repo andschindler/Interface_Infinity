@@ -260,9 +260,13 @@ function loadSkyImage(url, label) {
 }
 
 function preloadLocalImages() {
-  panoramaPool.forEach((pano) => {
-    const img = new Image();
-    img.src = pano.url;
+  panoramaPool.forEach((pano, index) => {
+    if (index === currentIndex) return;
+
+    setTimeout(() => {
+      const img = new Image();
+      img.src = pano.url;
+    }, index * 1200);
   });
 }
 
